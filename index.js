@@ -1,5 +1,6 @@
 const express = require('express');
-const morgan = require('morgan')
+const morgan = require('morgan');
+const cors = require('cors');
 const app = express();
 
 app.use(express.json());
@@ -21,6 +22,7 @@ morgan.token('postbody', (req) => {
 });
 
 app.use(morgan(':method :url :status - :response-time[3] ms - :postbody'));
+app.use(cors());
 
 //Data
 let persons = [
@@ -82,7 +84,7 @@ app.get('/info', (req, res) => {
 
 app.delete('/api/persons/:id', (req, res) => {
     const id = Number(req.params.id);
-    persons = persons.filter(person => person.id === id);
+    persons = persons.filter(person => person.id !== id);
 
     res.status(204).end();
 })
@@ -119,6 +121,43 @@ app.post('/api/persons', (req, res) => {
     };
 
     persons = persons.concat(person);
+
+    res.json(person);
+})
+
+//Put
+
+app.put('/api/persons/:id', (req, res) => {
+    console.log('Body: ', req.body);
+
+    const id = Number(req.params.id);
+    
+    const body = req.body;
+
+    if(!body) { // no content
+        return res.status(400).json({
+            error: 'no content'
+        });
+    }
+
+    // Check for valid entry
+    if(!body.name) {
+        return err(400, 'Must include name', res);
+    }
+    if(!body.number) {
+        return err(400, 'Must include number', res);
+    }
+
+    //find object and update
+    const person = persons.find(element => element.id === id);
+    const updatedPerson = {
+        ...person,
+        number: body.number
+    }
+
+    // following immutable principle, delete old object, then add new object
+    persons = persons.filter(element => element.id !== person.id); 
+    persons = persons.concat(updatedPerson); 
 
     res.json(person);
 })
