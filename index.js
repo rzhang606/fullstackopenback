@@ -23,6 +23,7 @@ morgan.token('postbody', (req) => {
 
 app.use(morgan(':method :url :status - :response-time[3] ms - :postbody'));
 app.use(cors());
+app.use(express.static('build')); // use prod frontend build
 
 //Data
 let persons = [
