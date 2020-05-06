@@ -7,57 +7,83 @@ const Person = require('./models/Person');
 
 const app = express();
 
-app.use(express.json()); //allows us to use json function
-
 /**
  * MiddleWare
  */
 
+ // Used at the end of checking for endpoints to catch any undefined endpoints client is trying to access
 const unknownEndpoint = (request, response) => {
     response.status(404).send({error: 'unknown endpoint'});
 }
 
+//Define the body token
 morgan.token('postbody', (req) => {    
-        
     if(JSON.stringify(req.body) === '{}') {
         return 'No Body';
-    }    
-
+    }
     return JSON.stringify(req.body)
 });
 
+//express error handler
+const errorHandler = (error, req, res, next) => {
+    console.error(error.message);
+
+    if(error.name === 'CastError') { //invalid object id for Mongo
+        return res.status(400).send({error: 'malformatted id'});
+    }
+
+    next(error); //passes error forward to default express error handler
+}
+
+
+app.use(express.static('build')); // serve our frontend pages
+app.use(express.json()); //allows us to use json function
 app.use(morgan(':method :url :status - :response-time[3] ms - :postbody')); //logging by morgan
 app.use(cors()); //allows cors
-app.use(express.static('build')); // serve our frontend pages
 
-//Get
 
-app.get('/', (req, res) => {
-    res.send('<h1>Hello World </h1>');
-});
+/**
+ * Get
+ */
 
+ //get all people
 app.get('/api/persons', (req, res) => {
     //Retrieve using 'find' method of Person model, {} looks for all
-    Person.find({}).then(person => {
-        res.json(person);
-    })
+    Person.find({})
+        .then(person => {
+            res.json(person);
+        })
+        .catch(err => {
+            console.log('Error getting all: ', err);
+            res.status(500).end();
+        });
 });
 
-app.get('/api/persons/:id', (req, res) => {
-    Person.findById(req.params.id).then(person => {
-        res.json(person.toJSON());
-    });
+//get person by id
+app.get('/api/persons/:id', (req, res, next) => {
+    Person.findById(req.params.id)
+        .then(person => {
+            if(person) {
+                res.json(person.toJSON());
+            } else {
+                res.status(404).end();
+            }
+        })
+        .catch( err => next(err));
 })
 
+//get info of the People collection
 app.get('/info', (req, res) => {
-    const size = 1;
     const time = new Date();
-    res.send(
-        `<div>
-            <p>Phonebook has info for ${size} people</p>
-            <p>${time}</p>
-        </div>`
-    )
+    Person.countDocuments({})
+        .then(num => {
+            res.send(
+                `<div>
+                    <p>Phonebook has info for ${num} people</p>
+                    <p>${time}</p>
+                </div>`
+            )
+        })
 });
 
 //Delete
@@ -134,7 +160,7 @@ app.put('/api/persons/:id', (req, res) => {
         number: body.number,
     }
 
-    Person.findByIdAndUpdate(req.params.id, updatePerson, {new: true})
+    Person.findByIdAndUpdate(req.params.id, updatePerson, {new: true}) //new: true gives us the updated object instead of original (updatedPerson)
         .then(updatedPerson => {
             console.log(`Updated ${updatedPerson.name} successfully`);
             res.json(updatedPerson.toJSON());
@@ -147,6 +173,7 @@ app.put('/api/persons/:id', (req, res) => {
 //helpers
 
 const err = (code, message, res) => {
+    console.log(`Error code ${code}: `, message);
     return res.status(code).json(
         `error: ${message}`
     );
@@ -155,8 +182,9 @@ const err = (code, message, res) => {
 
 //End
 
-//uses the specified middleware when no endpoint is found
-app.use(unknownEndpoint);
+// Middleware to be loaded last
+app.use(unknownEndpoint); // no endpoint
+app.use(errorHandler);  // err handling
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
