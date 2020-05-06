@@ -30,6 +30,8 @@ const errorHandler = (error, req, res, next) => {
 
     if(error.name === 'CastError') { //invalid object id for Mongo
         return res.status(400).send({error: 'malformatted id'});
+    } else if(error.name === 'ValidationError') {
+        return res.status(400).json({err: error.message});
     }
 
     next(error); //passes error forward to default express error handler
@@ -86,7 +88,9 @@ app.get('/info', (req, res) => {
         })
 });
 
-//Delete
+/**
+ * Delete
+ */
 
 app.delete('/api/persons/:id', (req, res) => {
     Person.findByIdAndDelete(req.params.id)
@@ -98,27 +102,12 @@ app.delete('/api/persons/:id', (req, res) => {
         console.log(`Error deleting`, err);
     })
 })
+/**
+ * Post
+ */
 
-//Post
-
-app.post('/api/persons', (req, res) => {
-    console.log('Body: ', req.body);
-    
+app.post('/api/persons', (req, res, next) => {    
     const body = req.body;
-
-    if(!body) { // no content
-        return res.status(400).json({
-            error: 'no content'
-        });
-    }
-
-    // Check for valid entry
-    if(body.name === "") {
-        return err(400, 'Must include name', res);
-    }
-    if(body.number === "") {
-        return err(400, 'Must include number', res);
-    }
 
     const person = new Person({
         name: body.name,
@@ -131,27 +120,17 @@ app.post('/api/persons', (req, res) => {
             console.log(`Saved ${savedPerson.name} successfully`);
             res.json(savedPerson.toJSON());
         })
-        .catch(err => {
-            console.log(`Error occured`, err);
-        })
+        .catch(err => next(err)); // let middleware handler this error
 })
 
 //Put
 
-app.put('/api/persons/:id', (req, res) => {
+app.put('/api/persons/:id', (req, res, next) => {
     const body = req.body;
     console.log('Body: ', body);
 
     // Check for valid entry
-    if(!body) { // no content
-        return res.status(400).json({
-            error: 'no content'
-        });
-    }
-    if(body.name === "") {
-        return err(400, 'Must include name', res);
-    }
-    if(body.number === "") {
+    if(!body.number) {
         return err(400, 'Must include number', res);
     }
 
@@ -165,9 +144,7 @@ app.put('/api/persons/:id', (req, res) => {
             console.log(`Updated ${updatedPerson.name} successfully`);
             res.json(updatedPerson.toJSON());
         })
-        .catch(err => {
-            console.log('Error updating: ', err);
-        });
+        .catch(err => next(err));
 })
 
 //helpers

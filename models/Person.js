@@ -18,9 +18,18 @@ mongoose.connect(url, {useNewUrlParser: true, useUnifiedTopology:true })
 //define a schema
 //in mongoose, defines the shape of the documents in a certain collection
 const personSchema = new mongoose.Schema({
-    name: String,
-    number: String,
-    date: Date
+    name: {
+        type: String,
+        required: true
+    },
+    number: {
+        type: String,
+        required: true
+    },
+    date: {
+        type: Date,
+        required: true
+    }
 });
 
 //id is becomes a string instead of object using 'toJSON' fun
