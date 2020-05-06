@@ -1,18 +1,23 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+require('dotenv').config();
+
+const Person = require('./models/Person');
+
 const app = express();
 
-app.use(express.json());
+app.use(express.json()); //allows us to use json function
 
-//Middleware
+/**
+ * MiddleWare
+ */
 
 const unknownEndpoint = (request, response) => {
     response.status(404).send({error: 'unknown endpoint'});
 }
 
 morgan.token('postbody', (req) => {    
-    console.log(req.body);
         
     if(JSON.stringify(req.body) === '{}') {
         return 'No Body';
@@ -21,33 +26,9 @@ morgan.token('postbody', (req) => {
     return JSON.stringify(req.body)
 });
 
-app.use(morgan(':method :url :status - :response-time[3] ms - :postbody'));
-app.use(cors());
-app.use(express.static('build')); // use prod frontend build
-
-//Data
-let persons = [
-    {
-        "name": "Arto Hellas",
-        "number": "040-123456",
-        "id": 1
-    },
-    {
-        "name": "Ada Lovelace",
-        "number": "39-44-5323523",
-        "id": 2
-    },
-    {
-        "name": "Dan Abramov",
-        "number": "12-43-234345",
-        "id": 3
-    },
-    {
-        "name": "Mary Poppendieck",
-        "number": "39-23-6423122",
-        "id": 4
-    }
-]
+app.use(morgan(':method :url :status - :response-time[3] ms - :postbody')); //logging by morgan
+app.use(cors()); //allows cors
+app.use(express.static('build')); // serve our frontend pages
 
 //Get
 
@@ -56,22 +37,20 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons);
+    //Retrieve using 'find' method of Person model, {} looks for all
+    Person.find({}).then(person => {
+        res.json(person);
+    })
 });
 
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id);
-    const results = persons.filter(person => person.id === id);
-    if (results.length === 0) {
-        return res.status(404).json({
-            error: 'Not Found'
-        });
-    }
-    res.json();
+    Person.findById(req.params.id).then(person => {
+        res.json(person.toJSON());
+    });
 })
 
 app.get('/info', (req, res) => {
-    const size = persons.length;
+    const size = 1;
     const time = new Date();
     res.send(
         `<div>
@@ -84,10 +63,14 @@ app.get('/info', (req, res) => {
 //Delete
 
 app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id);
-    persons = persons.filter(person => person.id !== id);
-
-    res.status(204).end();
+    Person.findByIdAndDelete(req.params.id)
+    .then(result => {
+        console.log(`Deleted ${result.name} succesfully`);
+        res.status(204).end();
+    })
+    .catch(err => {
+        console.log(`Error deleting`, err);
+    })
 })
 
 //Post
@@ -104,83 +87,78 @@ app.post('/api/persons', (req, res) => {
     }
 
     // Check for valid entry
-    if(!body.name) {
+    if(body.name === "") {
         return err(400, 'Must include name', res);
     }
-    if(!body.number) {
+    if(body.number === "") {
         return err(400, 'Must include number', res);
     }
-    if(persons.filter(person => person.name === body.name).length !== 0) {
-        return err(400, 'Name must be unique', res);
-    }
 
-    const person = {
+    const person = new Person({
         name: body.name,
         number: body.number,
         date: new Date(),
-        id: generateId()
-    };
+    })
 
-    persons = persons.concat(person);
-
-    res.json(person);
+    person.save()
+        .then(savedPerson => {
+            console.log(`Saved ${savedPerson.name} successfully`);
+            res.json(savedPerson.toJSON());
+        })
+        .catch(err => {
+            console.log(`Error occured`, err);
+        })
 })
 
 //Put
 
 app.put('/api/persons/:id', (req, res) => {
-    console.log('Body: ', req.body);
-
-    const id = Number(req.params.id);
-    
     const body = req.body;
+    console.log('Body: ', body);
 
+    // Check for valid entry
     if(!body) { // no content
         return res.status(400).json({
             error: 'no content'
         });
     }
-
-    // Check for valid entry
-    if(!body.name) {
+    if(body.name === "") {
         return err(400, 'Must include name', res);
     }
-    if(!body.number) {
+    if(body.number === "") {
         return err(400, 'Must include number', res);
     }
 
-    //find object and update
-    const person = persons.find(element => element.id === id);
-    const updatedPerson = {
-        ...person,
-        number: body.number
+    const updatePerson = {
+        name: body.name,
+        number: body.number,
     }
 
-    // following immutable principle, delete old object, then add new object
-    persons = persons.filter(element => element.id !== person.id); 
-    persons = persons.concat(updatedPerson); 
-
-    res.json(person);
+    Person.findByIdAndUpdate(req.params.id, updatePerson, {new: true})
+        .then(updatedPerson => {
+            console.log(`Updated ${updatedPerson.name} successfully`);
+            res.json(updatedPerson.toJSON());
+        })
+        .catch(err => {
+            console.log('Error updating: ', err);
+        });
 })
 
 //helpers
 
-const generateId = () => {
-    return Math.floor(Math.random() * 1000);
-}
-
 const err = (code, message, res) => {
-    return res.status(code).json({
-        error: message
-    });
+    return res.status(code).json(
+        `error: ${message}`
+    );
 }
 
 
 //End
 
+//uses the specified middleware when no endpoint is found
 app.use(unknownEndpoint);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
