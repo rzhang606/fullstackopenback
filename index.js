@@ -11,17 +11,17 @@ const app = express();
  * MiddleWare
  */
 
- // Used at the end of checking for endpoints to catch any undefined endpoints client is trying to access
+// Used at the end of checking for endpoints to catch any undefined endpoints client is trying to access
 const unknownEndpoint = (request, response) => {
-    response.status(404).send({error: 'unknown endpoint'});
-}
+    response.status(404).send({ error: 'unknown endpoint' });
+};
 
 //Define the body token
-morgan.token('postbody', (req) => {    
+morgan.token('postbody', (req) => {
     if(JSON.stringify(req.body) === '{}') {
         return 'No Body';
     }
-    return JSON.stringify(req.body)
+    return JSON.stringify(req.body);
 });
 
 //express error handler
@@ -35,7 +35,7 @@ const errorHandler = (error, req, res, next) => {
     }
 
     next(error); //passes error forward to default express error handler
-}
+};
 
 
 app.use(express.static('build')); // serve our frontend pages
@@ -48,7 +48,7 @@ app.use(cors()); //allows cors
  * Get
  */
 
- //get all people
+//get all people
 app.get('/api/persons', (req, res) => {
     //Retrieve using 'find' method of Person model, {} looks for all
     Person.find({})
@@ -71,7 +71,7 @@ app.get('/api/persons/:id', (req, res, next) => {
             }
         })
         .catch( err => next(err));
-})
+});
 
 //get info of the People collection
 app.get('/info', (req, res) => {
@@ -83,8 +83,8 @@ app.get('/info', (req, res) => {
                     <p>Phonebook has info for ${num} people</p>
                     <p>${time}</p>
                 </div>`
-            )
-        })
+            );
+        });
 });
 
 /**
@@ -93,26 +93,26 @@ app.get('/info', (req, res) => {
 
 app.delete('/api/persons/:id', (req, res) => {
     Person.findByIdAndDelete(req.params.id)
-    .then(result => {
-        console.log(`Deleted ${result.name} succesfully`);
-        res.status(204).end();
-    })
-    .catch(err => {
-        return err(500, 'Could not delete', res);
-    })
-})
+        .then(result => {
+            console.log(`Deleted ${result.name} succesfully`);
+            res.status(204).end();
+        })
+        .catch(err => {
+            return err(500, 'Could not delete', res);
+        });
+});
 /**
  * Post
  */
 
-app.post('/api/persons', (req, res, next) => {    
+app.post('/api/persons', (req, res, next) => {
     const body = req.body;
 
     const newPerson = new Person({
         name: body.name,
         number: body.number,
         date: new Date(),
-    })
+    });
 
     newPerson.save()
         .then(savedPerson => {
@@ -120,7 +120,7 @@ app.post('/api/persons', (req, res, next) => {
             res.json(savedPerson.toJSON());
         })
         .catch(err => next(err)); // let middleware handler this error
-})
+});
 
 //Put
 
@@ -136,15 +136,15 @@ app.put('/api/persons/:id', (req, res, next) => {
     const updatePerson = {
         name: body.name,
         number: body.number,
-    }
+    };
 
-    Person.findByIdAndUpdate(req.params.id, updatePerson, {new: true}) //new: true gives us the updated object instead of original (updatedPerson)
+    Person.findByIdAndUpdate(req.params.id, updatePerson, { new: true }) //new: true gives us the updated object instead of original (updatedPerson)
         .then(updatedPerson => {
             console.log(`Updated ${updatedPerson.name} successfully`);
             res.json(updatedPerson.toJSON());
         })
         .catch(err => next(err));
-})
+});
 
 //helpers
 
@@ -153,7 +153,7 @@ const err = (code, message, res) => {
     return res.status(code).json(
         `error: ${message}`
     );
-}
+};
 
 
 //End

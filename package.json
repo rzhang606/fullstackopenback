@@ -10,7 +10,8 @@
     "build:ui": "rm -rf build && cd ../fullstackopen/part2/phonebook && npm run build --prod && cp -r build ../../../fullstackopen-backend/",
     "deploy": "git push heroku master",
     "deploy:full": "npm run build:ui && git add . && git commit -m 'deploy build' && npm run deploy",
-    "logs": "heroku logs --tail"
+    "logs": "heroku logs --tail",
+    "lint": "eslint ."
   },
   "author": "Richard Zhang",
   "license": "ISC",
@@ -23,6 +24,7 @@
     "morgan": "^1.10.0"
   },
   "devDependencies": {
+    "eslint": "^6.8.0",
     "nodemon": "^2.0.3"
   }
 }
