@@ -1,12 +1,12 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const uniqueValidator = require('mongoose-unique-validator');
 
-mongoose.set('useFindAndModify', false);
-
+mongoose.set('useFindAndModify', false); //deprecation warnings
+mongoose.set('useCreateIndex', true);
 const url = process.env.MONGODB_URI;
 
 console.log('Connecting to ', url);
-
 mongoose.connect(url, {useNewUrlParser: true, useUnifiedTopology:true })
     .then(result => {
         console.log('Conncted to MongoDB');
@@ -20,7 +20,8 @@ mongoose.connect(url, {useNewUrlParser: true, useUnifiedTopology:true })
 const personSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     number: {
         type: String,
@@ -31,6 +32,7 @@ const personSchema = new mongoose.Schema({
         required: true
     }
 });
+personSchema.plugin(uniqueValidator);
 
 //id is becomes a string instead of object using 'toJSON' fun
 personSchema.set('toJSON', {

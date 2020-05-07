@@ -29,9 +29,9 @@ const errorHandler = (error, req, res, next) => {
     console.error(error.message);
 
     if(error.name === 'CastError') { //invalid object id for Mongo
-        return res.status(400).send({error: 'malformatted id'});
+        return err(400, 'malformatted id', res);
     } else if(error.name === 'ValidationError') {
-        return res.status(400).json({err: error.message});
+        return err(400, error.message, res);
     }
 
     next(error); //passes error forward to default express error handler
@@ -56,8 +56,7 @@ app.get('/api/persons', (req, res) => {
             res.json(person);
         })
         .catch(err => {
-            console.log('Error getting all: ', err);
-            res.status(500).end();
+            return err(500, err.message, res);
         });
 });
 
@@ -68,7 +67,7 @@ app.get('/api/persons/:id', (req, res, next) => {
             if(person) {
                 res.json(person.toJSON());
             } else {
-                res.status(404).end();
+                return err(404, 'Not Found', res);
             }
         })
         .catch( err => next(err));
@@ -99,7 +98,7 @@ app.delete('/api/persons/:id', (req, res) => {
         res.status(204).end();
     })
     .catch(err => {
-        console.log(`Error deleting`, err);
+        return err(500, 'Could not delete', res);
     })
 })
 /**
@@ -109,13 +108,13 @@ app.delete('/api/persons/:id', (req, res) => {
 app.post('/api/persons', (req, res, next) => {    
     const body = req.body;
 
-    const person = new Person({
+    const newPerson = new Person({
         name: body.name,
         number: body.number,
         date: new Date(),
     })
 
-    person.save()
+    newPerson.save()
         .then(savedPerson => {
             console.log(`Saved ${savedPerson.name} successfully`);
             res.json(savedPerson.toJSON());
