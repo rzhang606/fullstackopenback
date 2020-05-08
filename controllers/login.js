@@ -21,6 +21,7 @@ loginRouter.post('/', async (req, res) => {
     }
     logger.info(`Login successful: ${user.username}`);
 
+    //this also defines how the token will be decoded
     const userForToken = {
         username: user.username,
         id: user._id,

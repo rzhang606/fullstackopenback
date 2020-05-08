@@ -91,7 +91,6 @@ peopleRouter.post('/', async (req, res, next) => {
     const token = getToken(req); //grab token from client req
     //checks validity of token, and decodes token
     const decodedToken = jwt.verify(token, process.env.SECRET);
-    logger.info(decodedToken);
     if(!token || !decodedToken.id) {
         return logger.httpError(401, 'token missing or invalid', res);
     }
