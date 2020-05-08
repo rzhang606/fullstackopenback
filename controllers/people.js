@@ -12,7 +12,9 @@ const logger = require('../utils/logger');
 //get all people
 peopleRouter.get('/', (req, res) => {
     //Retrieve using 'find' method of Person model, {} looks for all
-    Person.find({})
+    Person
+        .find({})
+        .populate('user', { name: 1 })
         .then(person => {
             res.json(person);
         })
@@ -23,7 +25,9 @@ peopleRouter.get('/', (req, res) => {
 
 //get person by id
 peopleRouter.get('/:id', (req, res, next) => {
-    Person.findById(req.params.id)
+    Person
+        .findById(req.params.id)
+        .populate('user', { name: 1 })
         .then(person => {
             if(person) {
                 res.json(person.toJSON());
