@@ -1,8 +1,10 @@
 const bcrypt = require('bcrypt');
 const usersRouter = require('express').Router();
-const uniqueValidator = require('mongoose-unique-validator');
 const User = require('../models/User');
 
+/**
+ * POST
+ */
 usersRouter.post('/', async (req, res) => {
     const body = req.body;
 
@@ -20,8 +22,12 @@ usersRouter.post('/', async (req, res) => {
     res.json(savedUser);
 });
 
+/**
+ * GET
+ */
 usersRouter.get('/', async (req, res) => {
-    const users = await User.find({});
+    // ids in 'people' field of users will be populated with their corresponding Person object
+    const users = await User.find({}).populate('people', { name: 1, number: 1 });
     res.json(users.map(u => u.toJSON()));
 });
 

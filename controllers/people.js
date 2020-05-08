@@ -1,5 +1,6 @@
 const peopleRouter = require('express').Router();
 const Person = require('../models/Person');
+const User = require('../models/User');
 const logger = require('../utils/logger');
 
 
@@ -56,7 +57,7 @@ peopleRouter.get('/info', (req, res) => {
 peopleRouter.delete('/:id', (req, res) => {
     Person.findByIdAndDelete(req.params.id)
         .then(result => {
-            console.log(`Deleted ${result.name} succesfully`);
+            logger.info(`Deleted ${result.name} succesfully`);
             res.status(204).end();
         })
         .catch(err => {
@@ -69,18 +70,27 @@ peopleRouter.delete('/:id', (req, res) => {
 /**
  * POST
  */
-peopleRouter.post('/', (req, res, next) => {
+peopleRouter.post('/', async (req, res, next) => {
     const body = req.body;
+
+    const user = await User.findById(body.userId);
 
     const newPerson = new Person({
         name: body.name,
         number: body.number,
         date: new Date(),
+        user: user._id
     });
 
+
     newPerson.save()
-        .then(savedPerson => {
-            console.log(`Saved ${savedPerson.name} successfully`);
+        .then(async savedPerson => {
+            logger.info(`Saved ${savedPerson.name} successfully`);
+
+            //save notes in user
+            user.people = user.people.concat(savedPerson._id);
+            await user.save();
+
             res.json(savedPerson.toJSON());
         })
         .catch(err => next(err)); // let middleware handler this error
@@ -93,7 +103,7 @@ peopleRouter.post('/', (req, res, next) => {
  */
 peopleRouter.put('/:id', (req, res, next) => {
     const body = req.body;
-    console.log('Body: ', body);
+    logger.info('Body: ', body);
 
     // Check for valid entry
     if(!body.number) {
@@ -107,7 +117,7 @@ peopleRouter.put('/:id', (req, res, next) => {
 
     Person.findByIdAndUpdate(req.params.id, updatePerson, { new: true }) //new: true gives us the updated object instead of original (updatedPerson)
         .then(updatedPerson => {
-            console.log(`Updated ${updatedPerson.name} successfully`);
+            logger.info(`Updated ${updatedPerson.name} successfully`);
             res.json(updatedPerson.toJSON());
         })
         .catch(err => next(err));
