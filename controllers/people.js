@@ -1,7 +1,18 @@
 const peopleRouter = require('express').Router();
+const jwt = require('jsonwebtoken');
 const Person = require('../models/Person');
 const User = require('../models/User');
 const logger = require('../utils/logger');
+
+
+
+const getToken = req => {
+    const auth = req.get('authorization');
+    if(auth && auth.toLowerCase().startsWith('bearer ')) {
+        return auth.substring(7);
+    }
+    return null;
+};
 
 
 
@@ -77,7 +88,15 @@ peopleRouter.delete('/:id', (req, res) => {
 peopleRouter.post('/', async (req, res, next) => {
     const body = req.body;
 
-    const user = await User.findById(body.userId);
+    const token = getToken(req); //grab token from client req
+    //checks validity of token, and decodes token
+    const decodedToken = jwt.verify(token, process.env.SECRET);
+    logger.info(decodedToken);
+    if(!token || !decodedToken.id) {
+        return logger.httpError(401, 'token missing or invalid', res);
+    }
+
+    const user = await User.findById(decodedToken.id);
 
     const newPerson = new Person({
         name: body.name,
