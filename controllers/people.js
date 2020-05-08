@@ -19,7 +19,7 @@ peopleRouter.get('/', (req, res) => {
             res.json(person);
         })
         .catch(err => {
-            return err(500, err.message, res);
+            return logger.httpError(500, err.message, res);
         });
 });
 
@@ -65,7 +65,7 @@ peopleRouter.delete('/:id', (req, res) => {
             res.status(204).end();
         })
         .catch(err => {
-            return err(500, 'Could not delete', res);
+            return logger.httpError(500, 'Could not delete', res);
         });
 });
 
