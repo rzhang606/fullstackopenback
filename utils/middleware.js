@@ -25,6 +25,8 @@ const errorHandler = (error, req, res, next) => {
         return logger.httpError(400, 'malformatted id', res);
     } else if(error.name === 'ValidationError') {
         return logger.httpError(400, error.message, res);
+    } else if(error.name === 'JsonWebTokenError') {
+        return logger.httpError(401, 'invalid token', res);
     }
 
     next(error); //passes error forward to default express error handler
